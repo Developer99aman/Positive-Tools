@@ -88,8 +88,8 @@ export default function HdBackgroundRemover() {
       return;
     }
     
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
+    // Validate file size (max 20MB)
+    if (file.size > 20 * 1024 * 1024) {
       setError('File size must be less than 10MB.');
       return;
     }
@@ -126,22 +126,51 @@ export default function HdBackgroundRemover() {
     setIsProcessing(true);
     setProgress(0);
     setError(null);
-    
+
+    let progressValue = 0;
+    let fastInterval: NodeJS.Timeout | null = null;
+    let slowInterval: NodeJS.Timeout | null = null;
+
+    // Fast increment from 0 to 90%
+    fastInterval = setInterval(() => {
+      if (progressValue < 90) {
+        // Fast increments: 7-13% per tick
+        progressValue += Math.floor(Math.random() * 7) + 7;
+        if (progressValue > 80) progressValue = 80;
+        setProgress(progressValue);
+      } else {
+        clearInterval(fastInterval!);
+        // Start slow increment by 12% every 2 seconds until 100%
+        slowInterval = setInterval(() => {
+          if (progressValue < 100) {
+            progressValue += 12;
+            if (progressValue > 100) progressValue = 100;
+            setProgress(progressValue);
+            if (progressValue >= 100) {
+              clearInterval(slowInterval!);
+            }
+          } else {
+            clearInterval(slowInterval!);
+          }
+        }, 2000);
+      }
+    }, 500); // Fast update for first 80%
+
     try {
       // Use the @imgly/background-removal library
       const imageBlob = await removeBackground(file);
-      
       // Create URL for the processed image
       const url = URL.createObjectURL(imageBlob);
       setProcessedImage(url);
       setProgress(100);
-      
     } catch (err) {
       console.error('Background removal failed:', err);
       setError('Failed to remove background. Please try again with a different image.');
     } finally {
       setIsProcessing(false);
-      setProgress(0);
+      if (fastInterval) clearInterval(fastInterval);
+      if (slowInterval) clearInterval(slowInterval);
+      setTimeout(() => setProgress(0), 500);
     }
   }, []);
 
@@ -220,7 +249,7 @@ export default function HdBackgroundRemover() {
                     Upload a high-resolution image
                   </p>
                   <p className="text-gray-500 font-semibold mb-4">
-                    Supports JPG, PNG, WebP up to 10MB
+                    Supports JPG, PNG, WebP up to 20MB
                   </p>
                   <button className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-lg font-bold">
                     Select Image
@@ -309,10 +338,73 @@ export default function HdBackgroundRemover() {
 
                       {/* Processing overlay */}
                       {isProcessing && (
-                        <div className="absolute inset-0 bg-white/80 rounded-lg flex items-center justify-center z-10">
-                          <div className="text-center">
-                            <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
-                            <p className="text-purple-600 font-bold">Processing... {progress}%</p>
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-100/90 via-pink-100/90 to-indigo-100/90 rounded-lg flex items-center justify-center z-30 backdrop-blur-md">
+                          <div className="flex flex-col items-center animate-fade-in">
+                            {/* Enhanced Animated SVG Loader */}
+                            <svg className="w-32 h-32 mb-6 drop-shadow-xl" viewBox="0 0 120 120">
+                              <defs>
+                                <linearGradient id="loader-gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                  <stop offset="0%" stopColor="#a78bfa" />
+                                  <stop offset="50%" stopColor="#f472b6" />
+                                  <stop offset="100%" stopColor="#818cf8" />
+                                </linearGradient>
+                                <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+                                  <stop offset="0%" stopColor="#f3e8ff" stopOpacity="0.8" />
+                                  <stop offset="100%" stopColor="#a78bfa" stopOpacity="0.1" />
+                                </radialGradient>
+                              </defs>
+                              <circle
+                                cx="60" cy="60" r="52"
+                                fill="url(#glow)"
+                              />
+                              <circle
+                                cx="60" cy="60" r="48"
+                                fill="none"
+                                stroke="#ede9fe"
+                                strokeWidth="8"
+                              />
+                              <circle
+                                cx="60" cy="60" r="48"
+                                fill="none"
+                                stroke="url(#loader-gradient2)"
+                                strokeWidth="8"
+                                strokeDasharray={2 * Math.PI * 48}
+                                strokeDashoffset={2 * Math.PI * 48 * (1 - progress / 100)}
+                                strokeLinecap="round"
+                                style={{ transition: 'stroke-dashoffset 0.3s cubic-bezier(.4,2,.6,1)' }}
+                              />
+                              <circle
+                                cx="60" cy="60" r="38"
+                                fill="none"
+                                stroke="#f472b6"
+                                strokeWidth="2"
+                                strokeDasharray="6 8"
+                                className="animate-spin-slow"
+                              />
+                              <g>
+                                <text
+                                  x="60" y="68"
+                                  textAnchor="middle"
+                                  fontSize="2.2rem"
+                                  fontWeight="bold"
+                                  fill="#a21caf"
+                                  style={{ fontFamily: 'monospace', filter: 'drop-shadow(0 2px 8px #f472b6cc)' }}
+                                >
+                                  {progress}%
+                                </text>
+                              </g>
+                            </svg>
+                            <div className="flex items-center gap-3 mb-3 animate-bounce">
+                              <Zap className="w-7 h-7 text-pink-500 animate-spin-slow" />
+                              <span className="text-xl font-extrabold text-purple-700 tracking-wide drop-shadow">AI Magic in Progress</span>
+                              <Sparkles className="w-7 h-7 text-indigo-400 animate-pulse" />
+                            </div>
+                            <p className="text-base text-gray-700 font-semibold animate-pulse">Removing background... <span className="text-purple-500 font-bold">Please wait</span></p>
+                            <div className="mt-4 flex gap-2">
+                              <span className="inline-block w-2 h-2 bg-purple-400 rounded-full animate-blink"></span>
+                              <span className="inline-block w-2 h-2 bg-pink-400 rounded-full animate-blink [animation-delay:0.2s]"></span>
+                              <span className="inline-block w-2 h-2 bg-indigo-400 rounded-full animate-blink [animation-delay:0.4s]"></span>
+                            </div>
                           </div>
                         </div>
                       )}
