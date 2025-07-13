@@ -89,8 +89,8 @@ export default function HdBackgroundRemover() {
     }
     
     // Validate file size (max 20MB)
-    if (file.size > 20 * 1024 * 1024) {
-      setError('File size must be less than 10MB.');
+    if (file.size > 50 * 1024 * 1024) {
+      setError('File size must be less than 50MB.');
       return;
     }
     
@@ -128,14 +128,14 @@ export default function HdBackgroundRemover() {
     setError(null);
 
     let progressValue = 0;
-    const increment = 9; // percent per tick
-    const intervalMs = 100; // ms per tick
+    const increment = 5; // percent per tick
+    const intervalMs = 200; // ms per tick
     let progressInterval: NodeJS.Timeout | null = null;
     let finished = false;
     progressInterval = setInterval(() => {
-      if (progressValue < 100 && !finished) {
+      if (progressValue < 200 && !finished) {
         progressValue += increment;
-        if (progressValue > 100) progressValue = 100;
+        if (progressValue > 200) progressValue = 200;
         setProgress(progressValue);
       } else {
         clearInterval(progressInterval!);
@@ -148,7 +148,7 @@ export default function HdBackgroundRemover() {
       // Create URL for the processed image
       const url = URL.createObjectURL(imageBlob);
       setProcessedImage(url);
-      setProgress(100);
+      setProgress(200);
       finished = true;
     } catch (err) {
       console.error('Background removal failed:', err);
