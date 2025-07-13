@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { Upload, Camera, Download, Loader2, CheckCircle, AlertCircle, Move, RotateCw, Crop, Palette, Type, SlidersHorizontal, Droplet, Sun, Moon, Paintbrush, Pipette, ArrowLeft } from 'lucide-react';
+import { Upload, Camera, Download, Loader2, CheckCircle, AlertCircle, Move, RotateCw, Crop, Palette, Type, SlidersHorizontal, Droplet, Sun, Moon, Paintbrush, Pipette, ArrowLeft, Zap, Sparkles } from 'lucide-react';
 import { removeBackground } from '@imgly/background-removal';
 
 // Passport photo dimensions (35mm x 45mm at 300 DPI)
@@ -355,6 +355,7 @@ export default function PassportPhotoMaker() {
   const [contrast, setContrast] = useState(100);
   const [saturation, setSaturation] = useState(100);
   const [hue, setHue] = useState(0);
+  const [progress, setProgress] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -362,14 +363,14 @@ export default function PassportPhotoMaker() {
   const gradientTemplates = [
     { id: 'blue-light', name: 'Blue Light', start: '#e0f2fe', end: '#0ea5e9' },
     { id: 'blue-dark', name: 'Blue Dark', start: '#1e40af', end: '#0f172a' },
-    { id: 'green-light', name: 'Green Light', start: '#dcfce7', end: '#16a34a' },
-    { id: 'green-dark', name: 'Gray Dark', start: '#372A2A', end: '#F4F0F0' },
+    { id: 'green-light', name: 'Blue Green', start: '#1493fcff', end: '#16a34a' },
+    { id: 'green-dark', name: 'Gray Dark', start: '#2d2323ff', end: '#F4F0F0' },
     { id: 'purple-light', name: 'Purple Light', start: '#f3e8ff', end: '#9333ea' },
     { id: 'purple-dark', name: 'Purple Dark', start: '#7c3aed', end: '#1e1b4b' },
     { id: 'red-light', name: 'Red Light', start: '#fef2f2', end: '#dc2626' },
     { id: 'red-dark', name: 'Red Dark', start: '#991b1b', end: '#0f172a' },
-    { id: 'orange-light', name: 'Orange Light', start: '#fff7ed', end: '#ea580c' },
-    { id: 'orange-dark', name: 'Orange Dark', start: '#c2410c', end: '#0f172a' }
+    { id: 'orange-light', name: 'Pink Light', start: '#fff7ed', end: '#f223a9fd' },
+    { id: 'orange-dark', name: 'Orange Dark', start: '#b54417ff', end: '#0f172a' }
   ];
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -384,11 +385,30 @@ export default function PassportPhotoMaker() {
     };
     img.src = URL.createObjectURL(file);
   };
-
+//progress bar 
   const processBackgroundRemoval = async (file: File) => {
     setIsProcessing(true);
+    setProgress(0);
+    let progressValue = 0;
+    const increment = 9; // percent per tick
+    const intervalMs = 100; // ms per tick
+    let progressInterval: NodeJS.Timeout | null = null;
+    let finished = false;
+    progressInterval = setInterval(() => {
+      if (progressValue < 100 && !finished) {
+        progressValue += increment;
+        if (progressValue > 100) progressValue = 100;
+        setProgress(progressValue);
+      } else {
+        clearInterval(progressInterval!);
+      }
+    }, intervalMs);//ends
+
     try {
       const imageBlob = await removeBackground(file);
+      finished = true;
+      setProgress(100);
+      clearInterval(progressInterval!);
       const img = new Image();
       img.onload = () => {
         setProcessedImage(img);
@@ -398,6 +418,8 @@ export default function PassportPhotoMaker() {
       };
       img.src = URL.createObjectURL(imageBlob);
     } catch (error) {
+      finished = true;
+      clearInterval(progressInterval!);
       console.error('Background removal failed:', error);
       setIsProcessing(false);
     }
@@ -607,9 +629,71 @@ export default function PassportPhotoMaker() {
               <div className="flex flex-col items-center justify-center min-h-[300px]">
                 {isProcessing ? (
                   <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <Loader2 className="w-8 h-8 text-blue-600 mx-auto mb-2 animate-spin" />
-                      <p className="text-gray-600 font-bold">Processing...</p>
+                    <div className="flex flex-col items-center animate-fade-in">
+                      <svg className="w-32 h-32 mb-6 drop-shadow-xl" viewBox="0 0 120 120">
+                        <defs>
+                          <linearGradient id="loader-gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#a78bfa" />
+                            <stop offset="50%" stopColor="#f472b6" />
+                            <stop offset="100%" stopColor="#818cf8" />
+                          </linearGradient>
+                          <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stopColor="#f3e8ff" stopOpacity="0.8" />
+                            <stop offset="100%" stopColor="#a78bfa" stopOpacity="0.1" />
+                          </radialGradient>
+                        </defs>
+                        <circle
+                          cx="60" cy="60" r="52"
+                          fill="url(#glow)"
+                        />
+                        <circle
+                          cx="60" cy="60" r="48"
+                          fill="none"
+                          stroke="#ede9fe"
+                          strokeWidth="8"
+                        />
+                        <circle
+                          cx="60" cy="60" r="48"
+                          fill="none"
+                          stroke="url(#loader-gradient2)"
+                          strokeWidth="8"
+                          strokeDasharray={2 * Math.PI * 48}
+                          strokeDashoffset={2 * Math.PI * 48 * (1 - progress / 100)}
+                          strokeLinecap="round"
+                          style={{ transition: 'stroke-dashoffset 0.3s cubic-bezier(.4,2,.6,1)' }}
+                        />
+                        <circle
+                          cx="60" cy="60" r="38"
+                          fill="none"
+                          stroke="#f472b6"
+                          strokeWidth="2"
+                          strokeDasharray="6 8"
+                          className="animate-spin-slow"
+                        />
+                        <g>
+                          <text
+                            x="60" y="68"
+                            textAnchor="middle"
+                            fontSize="2.2rem"
+                            fontWeight="bold"
+                            fill="#a21caf"
+                            style={{ fontFamily: 'monospace', filter: 'drop-shadow(0 2px 8px #f472b6cc)' }}
+                          >
+                            {progress}%
+                          </text>
+                        </g>
+                      </svg>
+                      <div className="flex items-center gap-3 mb-3 animate-bounce">
+                        <Zap className="w-7 h-7 text-pink-500 animate-spin-slow" />
+                        <span className="text-xl font-extrabold text-purple-700 tracking-wide drop-shadow">AI Magic in Progress</span>
+                        <Sparkles className="w-7 h-7 text-indigo-400 animate-pulse" />
+                      </div>
+                      <p className="text-base text-gray-700 font-semibold animate-pulse">Removing background... <span className="text-purple-500 font-bold">Please wait</span></p>
+                      <div className="mt-4 flex gap-2">
+                        <span className="inline-block w-2 h-2 bg-purple-400 rounded-full animate-blink"></span>
+                        <span className="inline-block w-2 h-2 bg-pink-400 rounded-full animate-blink [animation-delay:0.2s]"></span>
+                        <span className="inline-block w-2 h-2 bg-indigo-400 rounded-full animate-blink [animation-delay:0.4s]"></span>
+                      </div>
                     </div>
                   </div>
                 ) : processedImage ? (
@@ -903,4 +987,3 @@ export default function PassportPhotoMaker() {
     </div>
   );
 }
-

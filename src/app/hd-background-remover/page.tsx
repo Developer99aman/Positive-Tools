@@ -128,33 +128,19 @@ export default function HdBackgroundRemover() {
     setError(null);
 
     let progressValue = 0;
-    let fastInterval: NodeJS.Timeout | null = null;
-    let slowInterval: NodeJS.Timeout | null = null;
-
-    // Fast increment from 0 to 90%
-    fastInterval = setInterval(() => {
-      if (progressValue < 90) {
-        // Fast increments: 7-13% per tick
-        progressValue += Math.floor(Math.random() * 7) + 7;
-        if (progressValue > 80) progressValue = 80;
+    const increment = 9; // percent per tick
+    const intervalMs = 100; // ms per tick
+    let progressInterval: NodeJS.Timeout | null = null;
+    let finished = false;
+    progressInterval = setInterval(() => {
+      if (progressValue < 100 && !finished) {
+        progressValue += increment;
+        if (progressValue > 100) progressValue = 100;
         setProgress(progressValue);
       } else {
-        clearInterval(fastInterval!);
-        // Start slow increment by 12% every 2 seconds until 100%
-        slowInterval = setInterval(() => {
-          if (progressValue < 100) {
-            progressValue += 12;
-            if (progressValue > 100) progressValue = 100;
-            setProgress(progressValue);
-            if (progressValue >= 100) {
-              clearInterval(slowInterval!);
-            }
-          } else {
-            clearInterval(slowInterval!);
-          }
-        }, 2000);
+        clearInterval(progressInterval!);
       }
-    }, 500); // Fast update for first 80%
+    }, intervalMs);
 
     try {
       // Use the @imgly/background-removal library
@@ -163,13 +149,13 @@ export default function HdBackgroundRemover() {
       const url = URL.createObjectURL(imageBlob);
       setProcessedImage(url);
       setProgress(100);
+      finished = true;
     } catch (err) {
       console.error('Background removal failed:', err);
       setError('Failed to remove background. Please try again with a different image.');
+      finished = true;
     } finally {
       setIsProcessing(false);
-      if (fastInterval) clearInterval(fastInterval);
-      if (slowInterval) clearInterval(slowInterval);
       setTimeout(() => setProgress(0), 500);
     }
   }, []);
