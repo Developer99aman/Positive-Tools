@@ -391,7 +391,7 @@ export default function PassportPhotoMaker() {
     setProgress(0);
     let progressValue = 0;
     const increment = 3; // percent per tick
-    const intervalMs = 100; // ms per tick
+    const intervalMs = 500; // ms per tick
     let progressInterval: NodeJS.Timeout | null = null;
     let finished = false;
     progressInterval = setInterval(() => {
