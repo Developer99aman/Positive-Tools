@@ -88,7 +88,7 @@ export default function HdBackgroundRemover() {
       return;
     }
     
-    // Validate file size (max 20MB)
+    // Validate file size (max 50MB)
     if (file.size > 50 * 1024 * 1024) {
       setError('File size must be less than 50MB.');
       return;
@@ -128,8 +128,8 @@ export default function HdBackgroundRemover() {
     setError(null);
 
     let progressValue = 0;
-    const increment = 5; // percent per tick
-    const intervalMs = 200; // ms per tick
+    const increment = 3; // percent per tick
+    const intervalMs = 500; // ms per tick
     let progressInterval: NodeJS.Timeout | null = null;
     let finished = false;
     progressInterval = setInterval(() => {
